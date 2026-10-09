@@ -1,0 +1,18 @@
+{
+  "project": "Система учёта заявок",
+  "database": "SQLite",
+  "integrity_check": "ok",
+  "foreign_key_check": [],
+  "table_counts": {
+    "Categories": 4,
+    "Comments": 5,
+    "Requests": 5,
+    "Statuses": 4,
+    "Users": 5
+  },
+  "notes": [
+    "Результаты проверки локальной SQLite-базы.",
+    "Иллюстрации SQL в отчёте сохранены без изменений; они являются оформленными визуальными примерами, не реальными скриншотами DB Browser for SQLite.",
+    "UPDATE/DELETE демонстрируются отдельным транзакционным скриптом database/dml_test.sql, завершающимся ROLLBACK."
+  ]
+}
