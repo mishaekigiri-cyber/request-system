@@ -1,0 +1,34 @@
+PRAGMA foreign_keys = ON;
+
+CREATE TABLE IF NOT EXISTS Statuses (
+ status_id INTEGER PRIMARY KEY AUTOINCREMENT,
+ name TEXT NOT NULL UNIQUE
+);
+CREATE TABLE IF NOT EXISTS Categories (
+ category_id INTEGER PRIMARY KEY AUTOINCREMENT,
+ name TEXT NOT NULL UNIQUE,
+ description TEXT
+);
+CREATE TABLE IF NOT EXISTS Users (
+ user_id INTEGER PRIMARY KEY AUTOINCREMENT,
+ full_name TEXT NOT NULL,
+ email TEXT NOT NULL UNIQUE,
+ role TEXT NOT NULL CHECK (role IN ('Заявитель','Оператор','Исполнитель','Администратор'))
+);
+CREATE TABLE IF NOT EXISTS Requests (
+ request_id INTEGER PRIMARY KEY AUTOINCREMENT,
+ title TEXT NOT NULL,
+ description TEXT NOT NULL,
+ created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ user_id INTEGER NOT NULL REFERENCES Users(user_id),
+ category_id INTEGER NOT NULL REFERENCES Categories(category_id),
+ status_id INTEGER NOT NULL REFERENCES Statuses(status_id),
+ assignee_id INTEGER REFERENCES Users(user_id)
+);
+CREATE TABLE IF NOT EXISTS Comments (
+ comment_id INTEGER PRIMARY KEY AUTOINCREMENT,
+ request_id INTEGER NOT NULL REFERENCES Requests(request_id) ON DELETE CASCADE,
+ user_id INTEGER NOT NULL REFERENCES Users(user_id),
+ body TEXT NOT NULL,
+ created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
