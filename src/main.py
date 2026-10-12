@@ -1,6 +1,6 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Query, Request
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, Response
 from src.database import init_db
 from src.models import RequestCreate, RequestUpdate, StatusChange, RequestRead
 from src import services
@@ -10,7 +10,7 @@ async def lifespan(app: FastAPI):
     init_db()
     yield
 
-app=FastAPI(title='Система учёта заявок',version='0.6.0',description='Учебное приложение для регистрации и обработки заявок',lifespan=lifespan)
+app = FastAPI(title='Система учёта заявок API', version='0.7.0', description='REST API для регистрации и обработки заявок. Данные хранятся в SQLite.', lifespan=lifespan)
 
 @app.exception_handler(services.NotFoundError)
 async def not_found_handler(request: Request, exc: services.NotFoundError): return JSONResponse(status_code=404,content={'detail':str(exc)})
@@ -25,22 +25,35 @@ async function refresh(){const p=new URLSearchParams();if($('search').value.trim
 $('create').addEventListener('submit',async e=>{e.preventDefault();const f=new FormData(e.currentTarget);const body={title:f.get('title'),description:f.get('description'),user_id:Number(f.get('user_id')),category_id:Number(f.get('category_id')),assignee_id:f.get('assignee_id')?Number(f.get('assignee_id')):null};try{const res=await fetch('/requests',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const d=await res.json();if(!res.ok)throw Error(d.detail||'Не удалось создать заявку');$('message').textContent='Заявка #'+d.request_id+' создана';e.currentTarget.reset();await load()}catch(err){$('message').textContent=err.message}});$('requests').addEventListener('change',async e=>{if(e.target.dataset.status){const id=e.target.dataset.status;try{const r=await fetch('/requests/'+id+'/status',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status_id:Number(e.target.value)})});const d=await r.json();if(!r.ok)throw Error(d.detail||'Ошибка');await refresh()}catch(err){alert(err.message)}}});$('refresh').addEventListener('click',refresh);$('search').addEventListener('input',refresh);$('status').addEventListener('change',refresh);$('categoryFilter').addEventListener('change',refresh);window.statusOptions=[];get('/statuses').then(x=>{window.statusOptions=x;load()});
 </script></body></html>''')
 
-@app.get('/requests',response_model=list[RequestRead])
+@app.get('/requests', response_model=list[RequestRead], tags=['Заявки'], summary='Получить список заявок', description='Возвращает список заявок. Поддерживает поиск по теме, описанию и имени заявителя, фильтрацию по статусу и категории.')
 def get_requests(search: str|None=Query(default=None,max_length=150),status_id: int|None=Query(default=None,gt=0),category_id: int|None=Query(default=None,gt=0)):
     return services.list_requests(search,status_id,category_id)
-@app.get('/requests/{request_id}',response_model=RequestRead)
-def get_request(request_id: int): return services.get_request(request_id)
-@app.post('/requests',response_model=RequestRead,status_code=201)
-def post_request(data: RequestCreate): return services.create_request(data.model_dump())
-@app.patch('/requests/{request_id}',response_model=RequestRead)
-def patch_request(request_id: int,data: RequestUpdate): return services.update_request(request_id,data.model_dump(exclude_unset=True))
-@app.patch('/requests/{request_id}/status',response_model=RequestRead)
-def patch_status(request_id: int,data: StatusChange): return services.change_status(request_id,data.status_id)
-@app.get('/users')
-def get_users(): return services.list_users()
-@app.get('/statuses')
-def get_statuses(): return services.list_statuses()
-@app.get('/categories')
-def get_categories(): return services.list_categories()
-@app.get('/health')
-def health(): return {'status':'ok'}
+@app.get('/requests/{request_id}', response_model=RequestRead, tags=['Заявки'], summary='Получить заявку по ID')
+def get_request(request_id: int):
+    return services.get_request(request_id)
+@app.post('/requests', response_model=RequestRead, status_code=201, tags=['Заявки'], summary='Создать заявку', description='Создаёт заявку со статусом «Новая». Обязательны тема, описание, ID заявителя и ID категории.')
+def post_request(data: RequestCreate):
+    return services.create_request(data.model_dump())
+@app.patch('/requests/{request_id}', response_model=RequestRead, tags=['Заявки'], summary='Изменить поля заявки', description='Частично изменяет тему, описание, категорию или исполнителя.')
+def patch_request(request_id: int, data: RequestUpdate):
+    return services.update_request(request_id, data.model_dump(exclude_unset=True))
+@app.patch('/requests/{request_id}/status', response_model=RequestRead, tags=['Заявки'], summary='Изменить статус заявки')
+def patch_status(request_id: int, data: StatusChange):
+    return services.change_status(request_id, data.status_id)
+@app.delete('/requests/{request_id}', status_code=204, response_class=Response, tags=['Заявки'], summary='Удалить заявку', description='Удаляет заявку по ID. При отсутствии заявки возвращает 404.')
+def delete_request(request_id: int):
+    services.delete_request(request_id)
+    return Response(status_code=204)
+
+@app.get('/users', tags=['Справочники'], summary='Получить список пользователей')
+def get_users():
+    return services.list_users()
+@app.get('/statuses', tags=['Справочники'], summary='Получить список статусов')
+def get_statuses():
+    return services.list_statuses()
+@app.get('/categories', tags=['Справочники'], summary='Получить список категорий')
+def get_categories():
+    return services.list_categories()
+@app.get('/health', tags=['Сервис'], summary='Проверить состояние сервиса')
+def health():
+    return {'status': 'ok'}
