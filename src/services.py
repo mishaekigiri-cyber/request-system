@@ -70,3 +70,14 @@ def list_statuses():
     with get_connection() as db: return [dict(x) for x in db.execute("SELECT status_id,name FROM Statuses ORDER BY status_id").fetchall()]
 def list_categories():
     with get_connection() as db: return [dict(x) for x in db.execute("SELECT category_id,name,description FROM Categories ORDER BY name").fetchall()]
+
+def delete_request(request_id: int) -> None:
+    with get_connection() as db:
+        cursor = db.execute(
+            "DELETE FROM Requests WHERE request_id = ?",
+            (request_id,),
+        )
+        if cursor.rowcount == 0:
+            raise NotFoundError(
+                f"Заявка с ID {request_id} не найдена"
+            )
