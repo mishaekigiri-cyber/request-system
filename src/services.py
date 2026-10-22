@@ -51,12 +51,6 @@ def update_request(request_id: int, data: dict[str, Any]) -> dict[str, Any]:
         except IntegrityError as exc: raise ValidationError("Не удалось изменить заявку") from exc
     return get_request(request_id)
 
-def delete_request(request_id: int) -> None:
-    with get_connection() as db:
-        if db.execute("SELECT 1 FROM Requests WHERE request_id=?", (request_id,)).fetchone() is None:
-            raise NotFoundError("Заявка с ID " + str(request_id) + " не найдена")
-        db.execute("DELETE FROM Requests WHERE request_id=?", (request_id,))
-
 def change_status(request_id: int, status_id: int) -> dict[str, Any]:
     with get_connection() as db:
         if db.execute("SELECT 1 FROM Requests WHERE request_id=?",(request_id,)).fetchone() is None: raise NotFoundError("Заявка с ID "+str(request_id)+" не найдена")
