@@ -129,7 +129,7 @@ const esc = s => String(s ?? '').replace(/[&<>"\x27]/g, c => ({
     '<': '&lt;',
     '>': '&gt;',
     '"': '&quot;',
-    '\\x27': '&#39;'
+    "'": '&#39;'
 }[c]));
 
 function errorMessage(data) {
